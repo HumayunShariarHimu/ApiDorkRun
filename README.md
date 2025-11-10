@@ -1,2 +1,2 @@
 # ApiDorkRun
-API Dork Runner - An AppliFresh Dorks Package for API Finding
+API Dork Runner - An Application of Fresh Dorks Package for API Finding
