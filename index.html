@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>API Dork Runner</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f1724; --card:#1e293b; --muted:#94a3b8; --accent:#06b6d4;
+  --success:#10b981; --danger:#ef4444; --glass: rgba(255,255,255,0.05);
+  --radius:16px; --gap:12px; font-family:'Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;background:var(--bg);color:#e6eef8;padding:28px;display:flex;justify-content:center;align-items:flex-start;font-smooth:always;}
+.container{width:100%;max-width:1080px;display:grid;grid-template-columns:1fr 380px;gap:24px}
+header{grid-column:1/-1;margin-bottom:16px;}
+h1{font-size:22px;color:#e6eef8;margin-bottom:4px;}
+p.lead{font-size:14px;color:var(--muted);}
+.card{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:0 8px 24px rgba(0,0,0,0.6);}
+textarea,input,select{width:100%;padding:10px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,0.1);color:#e6eef8;font-family:monospace;font-size:13px;}
+textarea{min-height:280px;resize:vertical;}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;}
+button{cursor:pointer;border:none;border-radius:10px;padding:10px 14px;font-weight:600;transition:all .2s;}
+.btn-primary{background:var(--accent);color:#022;box-shadow:0 6px 18px rgba(6,182,212,0.1);}
+.btn-primary:hover{opacity:0.9;}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.1);}
+.btn-ghost:hover{background:rgba(255,255,255,0.05);}
+.btn-danger{background:var(--danger);color:#fff;}
+.right{position:sticky;top:28px;align-self:start;display:flex;flex-direction:column;gap:12px;}
+.list{max-height:400px;overflow:auto;padding-right:6px;margin-top:8px;}
+.item{padding:8px;border-radius:10px;background:var(--glass);margin-bottom:8px;font-size:13px;display:flex;justify-content:space-between;align-items:center;}
+.item button{padding:4px 8px;font-size:12px;}
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
+.row{display:flex;gap:8px;margin-top:10px;}
+.row > *{flex:1;}
+footer{grid-column:1/-1;margin-top:18px;color:var(--muted);font-size:12px;text-align:center;}
+@media(max-width:900px){.container{grid-template-columns:1fr}.right{position:relative;top:auto;}}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+  	<center>
+    <h1>API Dork Runner</h1>
+    <p class="lead">An Application of Fresh Dorks Package for API Finding</p>
+    </center>
+  </header>
+
+  <section class="card">
+    <label>Dorks (per line)</label>
+    <textarea id="dorksArea"></textarea>
+
+    <div class="row">
+      <input type="file" id="fileInput" accept=".txt"/>
+      <button class="btn-ghost" id="clearBtn">Clear</button>
+      <button class="btn-ghost" id="exportBtn">Export</button>
+    </div>
+
+    <label style="margin-top:12px;">Target (optional, site:TARGET)</label>
+    <input type="text" id="targetInput" placeholder="example.com">
+
+    <div class="row">
+      <div>
+        <label>Delay (sec)</label>
+        <input type="number" id="delayInput" min="0" step="0.1" value="1">
+      </div>
+      <div>
+        <label>Limit (0=no limit)</label>
+        <input type="number" id="limitInput" min="0" step="1" value="0">
+      </div>
+    </div>
+
+    <div class="controls">
+      <label><input type="checkbox" id="openToggle" checked> Open in browser</label>
+      <label><input type="checkbox" id="newTabToggle" checked> New tab</label>
+      <label><input type="checkbox" id="dryRunToggle"> Dry-run (show URLs)</label>
+    </div>
+
+    <div class="controls">
+      <button class="btn-primary" id="runBtn">Run</button>
+      <button class="btn-ghost" id="showBtn">Show URLs</button>
+      <button class="btn-ghost" id="copyBtn">Copy Queries</button>
+      <button class="btn-danger" id="stopBtn" disabled>Stop</button>
+    </div>
+    <div id="status" class="muted" style="margin-top:10px;">Status: ready</div>
+  </section>
+
+  <aside class="right">
+    <div class="card">
+      <label>Templates / Fresh Pack</label>
+      <button class="btn-ghost" data-insert="CORE_DOORKS_API_JSON">CORE_DOORKS_API_JSON</button>
+      <button class="btn-ghost" data-insert="SWAGGER_OPENAPI_REDOC">SWAGGER_OPENAPI_REDOC</button>
+      <button class="btn-ghost" data-insert="CONFIG_LEAKS_KEYS">CONFIG_LEAKS_KEYS</button>
+      <button class="btn-ghost" data-insert="GRAPHQL">GRAPHQL</button>
+      <button class="btn-ghost" data-insert="ADMIN_INTERNAL_PATHS">ADMIN_INTERNAL_PATHS</button>
+      <button class="btn-ghost" data-insert="PASTE_CODE_HOSTS">PASTE_CODE_HOSTS</button>
+
+      <hr style="border:none;height:1px;background:rgba(255,255,255,0.1);margin:12px 0">
+      <label>URLs</label>
+      <div class="list" id="urlsList"></div>
+      <div class="controls">
+        <button class="btn-ghost" id="copyUrlsBtn">Copy URLs</button>
+        <button class="btn-ghost" id="openUrlsBtn">Open All</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <label>Bookmarklet</label>
+      <div style="margin-top:6px;font-size:13px;" class="muted">
+        javascript:(function(){var q=prompt('Dork query:','inurl:api filetype:json'); if(q) window.open('https://www.google.com/search?q='+encodeURIComponent(q));})();
+      </div>
+    </div>
+  </aside>
+
+  <footer>Humayun Shahriar Himu</footer>
+</div>
+
+<script>
+// --- JS logic same as before, full functional version ---
+(() => {
+  const dorksArea = document.getElementById('dorksArea');
+  const fileInput = document.getElementById('fileInput');
+  const clearBtn = document.getElementById('clearBtn');
+  const exportBtn = document.getElementById('exportBtn');
+  const targetInput = document.getElementById('targetInput');
+  const delayInput = document.getElementById('delayInput');
+  const limitInput = document.getElementById('limitInput');
+  const runBtn = document.getElementById('runBtn');
+  const showBtn = document.getElementById('showBtn');
+  const copyBtn = document.getElementById('copyBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  const urlsList = document.getElementById('urlsList');
+  const copyUrlsBtn = document.getElementById('copyUrlsBtn');
+  const openUrlsBtn = document.getElementById('openUrlsBtn');
+  const status = document.getElementById('status');
+  const dryRunToggle = document.getElementById('dryRunToggle');
+  const openToggle = document.getElementById('openToggle');
+  const newTabToggle = document.getElementById('newTabToggle');
+
+  let timers=[],stopping=false;
+
+  const PACK_TEXT = `GOOGLE_DORKS_API_QUERIES — FRESH
+CORE_DOORKS_API_JSON
+inurl:api filetype:json
+inurl:"/api/" inurl:"/v1/" filetype:json
+inurl:"/api/" intitle:"index.of" json
+inurl:api intitle:index.of json
+inurl:api filetype:json -site:github.com -site:stackoverflow.com
+
+SWAGGER_OPENAPI_REDOC
+intitle:"swagger" inurl:api
+intitle:"swagger" "openapi"
+intitle:"redoc" inurl:api
+inurl:"openapi.json" OR inurl:"swagger.json"
+filetype:json "openapi" OR "swagger"
+
+CONFIG_LEAKS_KEYS
+filetype:env "API_KEY" OR "SECRET_KEY"
+filetype:env "ACCESS_TOKEN" OR "API_TOKEN"
+filetype:env "DB_PASSWORD" OR "DATABASE_URL"
+filetype:ini "API_KEY" OR "SECRET"
+filetype:yaml "api_key" OR "secret"
+intext:"api_key" OR intext:"API_KEY" OR intext:"apiKey"
+intext:"access_token" OR intext:"ACCESS_TOKEN" OR intext:"auth_token"
+intext:"client_secret" OR intext:"CLIENT_SECRET" OR intext:"secret_key"
+
+GRAPHQL
+inurl:graphql intitle:playground OR intitle:"GraphiQL"
+inurl:graphql filetype:json
+
+ADMIN_INTERNAL_PATHS
+inurl:"/admin/api" OR inurl:"/internal/api" OR inurl:"/private/api"
+inurl:"/wp-json/" OR inurl:"wp-json"
+
+PASTE_CODE_HOSTS
+site:github.com "API_KEY" OR "api_key" OR "openai_key"
+site:pastebin.com "API_KEY" OR "api_key"
+site:github.com inurl:.env "API_KEY"`;
+
+  dorksArea.value = PACK_TEXT;
+
+  function parseDorks(text){
+    return text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l&&!/^[A-Z0-9_ \-]+$/.test(l));
+  }
+  function buildQuery(dork,target){return target?`site:${target} ${dork}`:dork;}
+  function googleSearchUrl(q){return 'https://www.google.com/search?q='+encodeURIComponent(q);}
+  function populateUrls(urls){
+    urlsList.innerHTML='';if(!urls.length){urlsList.innerHTML='<div class="muted">No URLs</div>';return;}
+    urls.forEach((u,i)=>{
+      const div=document.createElement('div');div.className='item';
+      div.innerHTML=`<div style="flex:1;word-break:break-all">${i+1}. ${u}</div><button data-url="${u}">Open</button>`;
+      div.querySelector('button').addEventListener('click',()=>window.open(u,'_blank'));
+      urlsList.appendChild(div);
+    });
+  }
+
+  fileInput.addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>dorksArea.value=ev.target.result;r.readAsText(f,'utf-8');});
+  clearBtn.addEventListener('click',()=>{if(confirm('Clear all?'))dorksArea.value='';});
+  exportBtn.addEventListener('click',()=>{const blob=new Blob([dorksArea.value||''],{type:'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='dorks.txt';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);});
+  document.querySelectorAll('[data-insert]').forEach(btn=>btn.addEventListener('click',()=>{const key=btn.getAttribute('data-insert');dorksArea.value+=`\n\n${PACK_TEXT}`;}));
+
+  showBtn.addEventListener('click',()=>{const d=parseDorks(dorksArea.value);const t=targetInput.value.trim();const l=Number(limitInput.value)||0;const final=l>0?d.slice(0,l):d;populateUrls(final.map(d=>googleSearchUrl(buildQuery(d,t))));status.textContent=`Prepared ${final.length} URLs`;});
+  copyBtn.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(dorksArea.value||'');alert('Copied dorks');}catch(e){alert('Copy failed');}});
+  copyUrlsBtn.addEventListener('click',async()=>{const urls=Array.from(urlsList.querySelectorAll('.item')).map(it=>it.textContent.trim());if(!urls.length){alert('No URLs');return;}await navigator.clipboard.writeText(urls.join('\n'));alert('Copied URLs');});
+  openUrlsBtn.addEventListener('click',()=>{Array.from(urlsList.querySelectorAll('.item button')).forEach((b,i)=>setTimeout(()=>window.open(b.getAttribute('data-url'),'_blank'),i*300));});
+
+  runBtn.addEventListener('click',()=>{
+    const d=parseDorks(dorksArea.value);if(!d.length){alert('No dorks');return;}
+    const limit=Number(limitInput.value)||0;const final=limit>0?d.slice(0,limit):d;
+    const t=targetInput.value.trim();const delay=Math.max(0,Number(delayInput.value)||0);const openF=openToggle.checked;const dry=dryRunToggle.checked;
+    const conf=prompt('Ensure authorization. Type YES to continue:');if(conf!=='YES'){alert('Aborted');return;}
+    const urls=final.map(d=>googleSearchUrl(buildQuery(d,t)));
+    if(dry||!openF){populateUrls(urls);status.textContent=`Dry-run: ${urls.length} URLs`;return;}
+    status.textContent=`Opening ${urls.length} URLs...`;stopping=false;stopBtn.disabled=false;
+    for(let i=0;i<urls.length;i++){if(stopping)break;setTimeout(()=>{if(newTabToggle.checked)window.open(urls[i],'_blank');else window.location.href=urls[i];},i*Math.max(200,delay*1000));}
+    setTimeout(()=>{status.textContent=`Done open attempts`;stopBtn.disabled=true;},urls.length*Math.max(200,delay*1000)+400);
+  });
+  stopBtn.addEventListener('click',()=>{if(!confirm('Stop opening?'))return;stopping=true;stopBtn.disabled=true;status.textContent='Stopped by user';});
+})();
+</script>
+</body>
+</html>
