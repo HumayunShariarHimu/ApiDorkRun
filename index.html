@@ -1,223 +1,70 @@
 <!doctype html>
-<html lang="bn">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>API Dork Runner</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b1220"><meta name="description" content="Responsive API dork runner and manual OpenAPI request workbench for authorized security research."><title>ApiDorkRun — API Research Workbench</title>
 <style>
-:root{
-  --bg:#0f1724; --card:#1e293b; --muted:#94a3b8; --accent:#06b6d4;
-  --success:#10b981; --danger:#ef4444; --glass: rgba(255,255,255,0.05);
-  --radius:16px; --gap:12px; font-family:'Inter',sans-serif;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{min-height:100vh;background:var(--bg);color:#e6eef8;padding:28px;display:flex;justify-content:center;align-items:flex-start;font-smooth:always;}
-.container{width:100%;max-width:1080px;display:grid;grid-template-columns:1fr 380px;gap:24px}
-header{grid-column:1/-1;margin-bottom:16px;}
-h1{font-size:22px;color:#e6eef8;margin-bottom:4px;}
-p.lead{font-size:14px;color:var(--muted);}
-.card{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:0 8px 24px rgba(0,0,0,0.6);}
-textarea,input,select{width:100%;padding:10px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,0.1);color:#e6eef8;font-family:monospace;font-size:13px;}
-textarea{min-height:280px;resize:vertical;}
-label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;}
-button{cursor:pointer;border:none;border-radius:10px;padding:10px 14px;font-weight:600;transition:all .2s;}
-.btn-primary{background:var(--accent);color:#022;box-shadow:0 6px 18px rgba(6,182,212,0.1);}
-.btn-primary:hover{opacity:0.9;}
-.btn-ghost{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.1);}
-.btn-ghost:hover{background:rgba(255,255,255,0.05);}
-.btn-danger{background:var(--danger);color:#fff;}
-.right{position:sticky;top:28px;align-self:start;display:flex;flex-direction:column;gap:12px;}
-.list{max-height:400px;overflow:auto;padding-right:6px;margin-top:8px;}
-.item{padding:8px;border-radius:10px;background:var(--glass);margin-bottom:8px;font-size:13px;display:flex;justify-content:space-between;align-items:center;}
-.item button{padding:4px 8px;font-size:12px;}
-.controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
-.row{display:flex;gap:8px;margin-top:10px;}
-.row > *{flex:1;}
-footer{grid-column:1/-1;margin-top:18px;color:var(--muted);font-size:12px;text-align:center;}
-@media(max-width:900px){.container{grid-template-columns:1fr}.right{position:relative;top:auto;}}
-</style>
-</head>
-<body>
-<div class="container">
-  <header>
-  	<center>
-    <h1>API Dork Runner</h1>
-    <p class="lead">An Application of Fresh Dorks Package for API Finding</p>
-    </center>
-  </header>
-
-  <section class="card">
-    <label>Dorks (per line)</label>
-    <textarea id="dorksArea"></textarea>
-
-    <div class="row">
-      <input type="file" id="fileInput" accept=".txt"/>
-      <button class="btn-ghost" id="clearBtn">Clear</button>
-      <button class="btn-ghost" id="exportBtn">Export</button>
-    </div>
-
-    <label style="margin-top:12px;">Target (optional, site:TARGET)</label>
-    <input type="text" id="targetInput" placeholder="example.com">
-
-    <div class="row">
-      <div>
-        <label>Delay (sec)</label>
-        <input type="number" id="delayInput" min="0" step="0.1" value="1">
-      </div>
-      <div>
-        <label>Limit (0=no limit)</label>
-        <input type="number" id="limitInput" min="0" step="1" value="0">
-      </div>
-    </div>
-
-    <div class="controls">
-      <label><input type="checkbox" id="openToggle" checked> Open in browser</label>
-      <label><input type="checkbox" id="newTabToggle" checked> New tab</label>
-      <label><input type="checkbox" id="dryRunToggle"> Dry-run (show URLs)</label>
-    </div>
-
-    <div class="controls">
-      <button class="btn-primary" id="runBtn">Run</button>
-      <button class="btn-ghost" id="showBtn">Show URLs</button>
-      <button class="btn-ghost" id="copyBtn">Copy Queries</button>
-      <button class="btn-danger" id="stopBtn" disabled>Stop</button>
-    </div>
-    <div id="status" class="muted" style="margin-top:10px;">Status: ready</div>
-  </section>
-
-  <aside class="right">
-    <div class="card">
-      <label>Templates / Fresh Pack</label>
-      <button class="btn-ghost" data-insert="CORE_DOORKS_API_JSON">CORE_DOORKS_API_JSON</button>
-      <button class="btn-ghost" data-insert="SWAGGER_OPENAPI_REDOC">SWAGGER_OPENAPI_REDOC</button>
-      <button class="btn-ghost" data-insert="CONFIG_LEAKS_KEYS">CONFIG_LEAKS_KEYS</button>
-      <button class="btn-ghost" data-insert="GRAPHQL">GRAPHQL</button>
-      <button class="btn-ghost" data-insert="ADMIN_INTERNAL_PATHS">ADMIN_INTERNAL_PATHS</button>
-      <button class="btn-ghost" data-insert="PASTE_CODE_HOSTS">PASTE_CODE_HOSTS</button>
-
-      <hr style="border:none;height:1px;background:rgba(255,255,255,0.1);margin:12px 0">
-      <label>URLs</label>
-      <div class="list" id="urlsList"></div>
-      <div class="controls">
-        <button class="btn-ghost" id="copyUrlsBtn">Copy URLs</button>
-        <button class="btn-ghost" id="openUrlsBtn">Open All</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <label>Bookmarklet</label>
-      <div style="margin-top:6px;font-size:13px;" class="muted">
-        javascript:(function(){var q=prompt('Dork query:','inurl:api filetype:json'); if(q) window.open('https://www.google.com/search?q='+encodeURIComponent(q));})();
-      </div>
-    </div>
-  </aside>
-
-  <footer>Humayun Shahriar Himu</footer>
-</div>
-
+:root{color-scheme:dark;--bg:#0b1220;--panel:#121e30;--line:#2a3b53;--text:#edf4ff;--muted:#a5b4c8;--accent:#4fd1c5;--danger:#fb7185;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top left,#162d4a,transparent 44%),var(--bg);color:var(--text)}button,input,textarea,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid #77a9ff;outline-offset:3px}button:disabled{opacity:.45;cursor:not-allowed}.app{width:min(1400px,100%);margin:auto;padding:clamp(10px,2.5vw,28px)}header{display:flex;align-items:center;gap:12px;padding:8px 0 22px}.logo{width:44px;height:44px;display:grid;place-items:center;border:1px solid #3c5879;border-radius:13px;background:#1a2b43;color:var(--accent);font-weight:800}h1{font-size:clamp(21px,3vw,30px);margin:0}header p{margin:5px 0 0;color:var(--muted);font-size:13px}.head-actions{margin-left:auto}.layout{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(300px,.9fr);gap:16px;align-items:start}.stack{display:grid;gap:16px;min-width:0}.card{min-width:0;background:rgba(18,30,48,.96);border:1px solid var(--line);border-radius:16px;padding:clamp(14px,2vw,22px);box-shadow:0 12px 32px #0002}.card h2{font-size:16px;margin:0 0 14px}.field{margin-top:13px}label{display:block;font-size:12px;font-weight:650;color:var(--muted);margin-bottom:7px}textarea,input[type=text],input[type=number],select{width:100%;border:1px solid var(--line);border-radius:10px;background:#0b1423;color:var(--text);padding:11px 12px;min-height:42px}textarea{min-height:220px;resize:vertical;font:13px/1.55 ui-monospace,Consolas,monospace}input[type=file]{width:100%;font-size:12px;color:var(--muted)}.row{display:flex;gap:9px;align-items:end}.row>*{flex:1;min-width:0}.btn{min-height:39px;display:inline-flex;align-items:center;justify-content:center;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:#17263b;color:var(--text);font-size:12px;font-weight:650;text-decoration:none}.primary{background:#087e82;color:white;border-color:#139b9d}.danger{border-color:#713647;color:#ffc2cc;background:#381d2a}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px}.options{display:flex;gap:13px;flex-wrap:wrap;margin-top:13px}.check{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px}.check input{accent-color:var(--accent)}.notice{padding:11px 12px;border-radius:10px;background:#142c38;border:1px solid #24515a;color:#c4f4ef;font-size:12px;line-height:1.6}.notice strong{display:block;margin-bottom:3px}.muted{color:var(--muted)}.small{font-size:12px;line-height:1.55}.template-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.template{text-align:left;white-space:normal}.template.active{border-color:var(--accent);background:#153c43}.status{display:flex;gap:9px;margin-top:13px;padding:11px;background:#0b1525;border:1px solid var(--line);border-radius:10px;font-size:12px;line-height:1.5;color:var(--muted)}.dot{width:8px;height:8px;background:#4ade80;border-radius:50%;margin-top:4px;flex:none}.status.error .dot{background:var(--danger)}.status.busy .dot{background:#fbbf24}.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:13px}.stat{padding:10px;background:#0b1525;border:1px solid var(--line);border-radius:10px}.stat strong{display:block;font-size:19px}.stat span{font-size:11px;color:var(--muted)}.progress{height:5px;background:#26374e;border-radius:10px;overflow:hidden;margin-top:12px}.progress span{height:100%;display:block;width:0;background:var(--accent)}.list{display:grid;gap:8px;margin-top:12px;max-height:420px;overflow:auto}.item{padding:10px;border:1px solid var(--line);border-radius:10px;background:#0c1626;display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:8px;align-items:start}.item .url{overflow-wrap:anywhere;font:12px/1.5 ui-monospace,monospace;color:#c8dcf8}.item .actions{margin:0}.empty{padding:20px;text-align:center;color:var(--muted);font-size:12px;border:1px dashed var(--line);border-radius:10px}.output{min-height:85px!important;font-size:12px!important}.bookmark{display:block;overflow-wrap:anywhere;padding:10px;border-radius:9px;background:#0b1423;border:1px solid var(--line);font:11px/1.6 monospace;color:#c7d9f3}footer{text-align:center;color:var(--muted);font-size:11px;padding:20px 4px}@media(max-width:850px){.layout{grid-template-columns:1fr}}@media(max-width:560px){.app{padding:10px}.layout,.stack{gap:10px}.card{padding:14px}.row.mobile{flex-direction:column;align-items:stretch}.actions .btn{flex:1}.item{grid-template-columns:20px minmax(0,1fr)}.item .actions{grid-column:2}.stats strong{font-size:16px}}@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;scroll-behavior:auto!important}}
+</style></head><body><main class="app">
+<header><div class="logo" aria-hidden="true">AD</div><div><h1>ApiDorkRun</h1><p>API discovery and manual request workbench</p></div><div class="head-actions"><a class="btn" href="https://github.com/HumayunShariarHimu/ApiDorkRun" target="_blank" rel="noopener noreferrer">GitHub</a></div></header>
+<div class="layout"><div class="stack">
+<section class="card"><h2>Search / dork runner</h2><div class="notice"><strong>Authorized use only</strong>Use only assets you own or have permission to assess. This tool builds search URLs; it does not retrieve secrets or bypass access controls.</div>
+<div class="field"><label for="queries">Queries (one per line; # comments ignored)</label><textarea id="queries" spellcheck="false"></textarea></div>
+<div class="row mobile field"><div><label for="queryFile">Import query list (.txt, max 2 MB)</label><input id="queryFile" type="file" accept=".txt,text/plain"></div><div><label for="target">Optional target domain</label><input id="target" type="text" placeholder="example.com"></div></div>
+<div class="row field"><div><label for="delay">Launch delay (seconds, 0–60)</label><input id="delay" type="number" min="0" max="60" step=".5" value="1"></div><div><label for="limit">Maximum queries (0 = all)</label><input id="limit" type="number" min="0" step="1" value="0"></div></div>
+<div class="options"><label class="check"><input id="allowOpen" type="checkbox" checked> Allow browser launches</label><label class="check"><input id="newTabs" type="checkbox" checked> Open in new tabs</label><label class="check"><input id="dry" type="checkbox" checked> Dry run</label></div>
+<div class="actions"><button class="btn primary" id="prepare" type="button">Prepare URLs</button><button class="btn" id="run" type="button">Run queue</button><button class="btn danger" id="stop" type="button" disabled>Stop queue</button></div>
+<div class="status" id="status" role="status" aria-live="polite"><span class="dot"></span><span id="statusText">Ready. Prepare queries to preview URLs.</span></div>
+<div class="stats"><div class="stat"><strong id="queryCount">0</strong><span>Queries</span></div><div class="stat"><strong id="urlCount">0</strong><span>URLs prepared</span></div><div class="stat"><strong id="launchCount">0</strong><span>Launch attempts</span></div></div><div class="progress"><span id="progress"></span></div>
+<div class="actions"><button class="btn" id="copyQueries" type="button">Copy queries</button><button class="btn" id="exportQueries" type="button">Export queries</button><button class="btn" id="copyUrls" type="button">Copy URLs</button><button class="btn" id="exportUrls" type="button">Export URLs</button></div></section>
+<section class="card"><h2>Prepared search URLs</h2><p class="small muted">Browser popup blockers may prevent multiple tabs from opening.</p><div class="list" id="urlList"><div class="empty">No URLs prepared yet.</div></div><div class="actions"><button class="btn" id="openAll" type="button">Open all</button><button class="btn" id="clearUrls" type="button">Clear results</button></div></section>
+</div><aside class="stack">
+<section class="card"><h2>Query template packs</h2><p class="small muted">Choose a category to replace the editor, or append all templates.</p><div class="template-grid" id="templateGrid"></div><div class="actions"><button class="btn" id="appendPack" type="button">Append full pack</button><button class="btn" id="restorePack" type="button">Restore defaults</button></div></section>
+<section class="card"><h2>Manual API request workbench</h2><div class="notice"><strong>Authorized API testing only</strong>Import a local OpenAPI JSON file or enter one endpoint. Browser CORS/network rules may block requests. No credentials or history are stored by this app.</div>
+<div class="field"><label for="specFile">Import OpenAPI 3.x / Swagger 2.0 JSON (max 2 MB)</label><input id="specFile" type="file" accept=".json,application/json"><p class="small muted">JSON only; YAML is not supported.</p></div>
+<div class="field"><label for="endpointSelect">Imported endpoint (optional)</label><select id="endpointSelect"><option value="">Manual endpoint</option></select></div>
+<div class="row mobile field"><div><label for="method">HTTP method</label><select id="method"><option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option><option>HEAD</option><option>OPTIONS</option></select></div><div><label for="apiUrl">Request URL</label><input id="apiUrl" type="text" inputmode="url" placeholder="https://api.example.com/v1/status"></div></div>
+<div class="field"><label for="headers">Headers (JSON object)</label><textarea class="output" id="headers" spellcheck="false">{
+  "Accept": "application/json"
+}</textarea></div>
+<div class="field"><label for="body">Request body (ignored for GET / HEAD)</label><textarea class="output" id="body" placeholder='{"example":true}' spellcheck="false"></textarea></div>
+<div class="actions"><button class="btn primary" id="sendRequest" type="button">Send one request</button><button class="btn" id="clearResponse" type="button">Clear response</button></div>
+<div class="status" id="apiStatus" role="status" aria-live="polite"><span class="dot"></span><span id="apiStatusText">Import a spec or enter a URL.</span></div>
+<div class="stats"><div class="stat"><strong id="httpStatus">—</strong><span>HTTP status</span></div><div class="stat"><strong id="duration">—</strong><span>Duration</span></div><div class="stat"><strong id="size">0 B</strong><span>Response size</span></div></div>
+<div class="field"><label for="responseHeaders">Readable response headers</label><textarea class="output" id="responseHeaders" readonly></textarea></div><div class="field"><label for="responseBody">Response body (display limited to 1 MB)</label><textarea class="output" id="responseBody" style="min-height:180px" readonly></textarea></div>
+<p class="small muted">Manual requests only; no fuzzing or automatic endpoint scanning. Credentials are omitted by default. Use test environments for non-read-only methods. CORS failures do not prove that an endpoint is down.</p></section>
+<section class="card"><h2>Bookmarklet</h2><p class="small muted">Copies a query prompt for a desktop bookmark.</p><code class="bookmark" id="bookmarklet">javascript:(function(){var q=prompt('Search query:','inurl:api filetype:json');if(q)window.open('https://www.google.com/search?q='+encodeURIComponent(q),'_blank','noopener');})();</code><div class="actions"><button class="btn" id="copyBookmarklet" type="button">Copy bookmarklet</button></div></section>
+<section class="card"><h2>Notes</h2><p class="small muted">Static app: no backend, telemetry, or server-side secret storage. Search results depend on the provider. Browser CORS, TLS, and network restrictions apply to API requests.</p></section>
+</aside></div><footer>ApiDorkRun · Humayun Shariar Himu · GitHub Pages static app</footer></main>
 <script>
-// --- JS logic same as before, full functional version ---
-(() => {
-  const dorksArea = document.getElementById('dorksArea');
-  const fileInput = document.getElementById('fileInput');
-  const clearBtn = document.getElementById('clearBtn');
-  const exportBtn = document.getElementById('exportBtn');
-  const targetInput = document.getElementById('targetInput');
-  const delayInput = document.getElementById('delayInput');
-  const limitInput = document.getElementById('limitInput');
-  const runBtn = document.getElementById('runBtn');
-  const showBtn = document.getElementById('showBtn');
-  const copyBtn = document.getElementById('copyBtn');
-  const stopBtn = document.getElementById('stopBtn');
-  const urlsList = document.getElementById('urlsList');
-  const copyUrlsBtn = document.getElementById('copyUrlsBtn');
-  const openUrlsBtn = document.getElementById('openUrlsBtn');
-  const status = document.getElementById('status');
-  const dryRunToggle = document.getElementById('dryRunToggle');
-  const openToggle = document.getElementById('openToggle');
-  const newTabToggle = document.getElementById('newTabToggle');
-
-  let timers=[],stopping=false;
-
-  const PACK_TEXT = `GOOGLE_DORKS_API_QUERIES — FRESH
-CORE_DOORKS_API_JSON
-inurl:api filetype:json
-inurl:"/api/" inurl:"/v1/" filetype:json
-inurl:"/api/" intitle:"index.of" json
-inurl:api intitle:index.of json
-inurl:api filetype:json -site:github.com -site:stackoverflow.com
-
-SWAGGER_OPENAPI_REDOC
-intitle:"swagger" inurl:api
-intitle:"swagger" "openapi"
-intitle:"redoc" inurl:api
-inurl:"openapi.json" OR inurl:"swagger.json"
-filetype:json "openapi" OR "swagger"
-
-CONFIG_LEAKS_KEYS
-filetype:env "API_KEY" OR "SECRET_KEY"
-filetype:env "ACCESS_TOKEN" OR "API_TOKEN"
-filetype:env "DB_PASSWORD" OR "DATABASE_URL"
-filetype:ini "API_KEY" OR "SECRET"
-filetype:yaml "api_key" OR "secret"
-intext:"api_key" OR intext:"API_KEY" OR intext:"apiKey"
-intext:"access_token" OR intext:"ACCESS_TOKEN" OR intext:"auth_token"
-intext:"client_secret" OR intext:"CLIENT_SECRET" OR intext:"secret_key"
-
-GRAPHQL
-inurl:graphql intitle:playground OR intitle:"GraphiQL"
-inurl:graphql filetype:json
-
-ADMIN_INTERNAL_PATHS
-inurl:"/admin/api" OR inurl:"/internal/api" OR inurl:"/private/api"
-inurl:"/wp-json/" OR inurl:"wp-json"
-
-PASTE_CODE_HOSTS
-site:github.com "API_KEY" OR "api_key" OR "openai_key"
-site:pastebin.com "API_KEY" OR "api_key"
-site:github.com inurl:.env "API_KEY"`;
-
-  dorksArea.value = PACK_TEXT;
-
-  function parseDorks(text){
-    return text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l&&!/^[A-Z0-9_ \-]+$/.test(l));
-  }
-  function buildQuery(dork,target){return target?`site:${target} ${dork}`:dork;}
-  function googleSearchUrl(q){return 'https://www.google.com/search?q='+encodeURIComponent(q);}
-  function populateUrls(urls){
-    urlsList.innerHTML='';if(!urls.length){urlsList.innerHTML='<div class="muted">No URLs</div>';return;}
-    urls.forEach((u,i)=>{
-      const div=document.createElement('div');div.className='item';
-      div.innerHTML=`<div style="flex:1;word-break:break-all">${i+1}. ${u}</div><button data-url="${u}">Open</button>`;
-      div.querySelector('button').addEventListener('click',()=>window.open(u,'_blank'));
-      urlsList.appendChild(div);
-    });
-  }
-
-  fileInput.addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>dorksArea.value=ev.target.result;r.readAsText(f,'utf-8');});
-  clearBtn.addEventListener('click',()=>{if(confirm('Clear all?'))dorksArea.value='';});
-  exportBtn.addEventListener('click',()=>{const blob=new Blob([dorksArea.value||''],{type:'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='dorks.txt';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);});
-  document.querySelectorAll('[data-insert]').forEach(btn=>btn.addEventListener('click',()=>{const key=btn.getAttribute('data-insert');dorksArea.value+=`\n\n${PACK_TEXT}`;}));
-
-  showBtn.addEventListener('click',()=>{const d=parseDorks(dorksArea.value);const t=targetInput.value.trim();const l=Number(limitInput.value)||0;const final=l>0?d.slice(0,l):d;populateUrls(final.map(d=>googleSearchUrl(buildQuery(d,t))));status.textContent=`Prepared ${final.length} URLs`;});
-  copyBtn.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(dorksArea.value||'');alert('Copied dorks');}catch(e){alert('Copy failed');}});
-  copyUrlsBtn.addEventListener('click',async()=>{const urls=Array.from(urlsList.querySelectorAll('.item')).map(it=>it.textContent.trim());if(!urls.length){alert('No URLs');return;}await navigator.clipboard.writeText(urls.join('\n'));alert('Copied URLs');});
-  openUrlsBtn.addEventListener('click',()=>{Array.from(urlsList.querySelectorAll('.item button')).forEach((b,i)=>setTimeout(()=>window.open(b.getAttribute('data-url'),'_blank'),i*300));});
-
-  runBtn.addEventListener('click',()=>{
-    const d=parseDorks(dorksArea.value);if(!d.length){alert('No dorks');return;}
-    const limit=Number(limitInput.value)||0;const final=limit>0?d.slice(0,limit):d;
-    const t=targetInput.value.trim();const delay=Math.max(0,Number(delayInput.value)||0);const openF=openToggle.checked;const dry=dryRunToggle.checked;
-    const conf=prompt('Ensure authorization. Type YES to continue:');if(conf!=='YES'){alert('Aborted');return;}
-    const urls=final.map(d=>googleSearchUrl(buildQuery(d,t)));
-    if(dry||!openF){populateUrls(urls);status.textContent=`Dry-run: ${urls.length} URLs`;return;}
-    status.textContent=`Opening ${urls.length} URLs...`;stopping=false;stopBtn.disabled=false;
-    for(let i=0;i<urls.length;i++){if(stopping)break;setTimeout(()=>{if(newTabToggle.checked)window.open(urls[i],'_blank');else window.location.href=urls[i];},i*Math.max(200,delay*1000));}
-    setTimeout(()=>{status.textContent=`Done open attempts`;stopBtn.disabled=true;},urls.length*Math.max(200,delay*1000)+400);
-  });
-  stopBtn.addEventListener('click',()=>{if(!confirm('Stop opening?'))return;stopping=true;stopBtn.disabled=true;status.textContent='Stopped by user';});
+(function(){'use strict';var $=function(id){return document.getElementById(id)};
+var packs={'Core API JSON':'inurl:api filetype:json\ninurl:"/api/" inurl:"/v1/" filetype:json\ninurl:api intitle:index.of json\ninurl:api filetype:json -site:github.com -site:stackoverflow.com','Swagger / OpenAPI':'intitle:swagger inurl:api\nintitle:swagger openapi\nintitle:redoc inurl:api\ninurl:openapi.json OR inurl:swagger.json\nfiletype:json openapi OR swagger','Configuration exposure':'filetype:env "API_KEY" OR "SECRET_KEY"\nfiletype:env "ACCESS_TOKEN" OR "API_TOKEN"\nfiletype:env "DB_PASSWORD" OR "DATABASE_URL"\nfiletype:yaml "api_key" OR "secret"','GraphQL':'inurl:graphql intitle:playground OR intitle:GraphiQL\ninurl:graphql filetype:json','Admin / internal paths':'inurl:"/admin/api" OR inurl:"/internal/api" OR inurl:"/private/api"\ninurl:wp-json','Code / paste references':'site:github.com "API_KEY" OR "api_key"\nsite:pastebin.com "API_KEY" OR "api_key"\nsite:github.com inurl:.env "API_KEY"'};
+var defaultPack=Object.keys(packs).map(function(k){return '# '+k+'\n'+packs[k]}).join('\n\n'),prepared=[],timer=null,runId=0,active=false,attempts=0,operations=[];var area=$('queries'),list=$('urlList');
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function status(msg,type){$('status').className='status'+(type?' '+type:'');$('statusText').textContent=msg}function apiStatus(msg,type){$('apiStatus').className='status'+(type?' '+type:'');$('apiStatusText').textContent=msg}
+function copy(text){if(!text){status('Nothing to copy.','error');return}if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(text).then(function(){status('Copied to clipboard.')}).catch(function(){fallbackCopy(text)});else fallbackCopy(text)}
+function fallbackCopy(text){var t=document.createElement('textarea');t.value=text;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.select();var ok=false;try{ok=document.execCommand('copy')}catch(e){}t.remove();status(ok?'Copied to clipboard.':'Clipboard unavailable; select and copy manually.',ok?'':'error')}
+function download(text,name){var u=URL.createObjectURL(new Blob([text],{type:'text/plain;charset=utf-8'})),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},1000)}
+function parse(){return area.value.split(/\r?\n/).map(function(x){return x.trim()}).filter(function(x){return x&&!x.startsWith('#')})}
+function targetDomain(){var v=$('target').value.trim();if(!v)return '';try{if(/^https?:\/\//i.test(v))v=new URL(v).hostname}catch(e){return null}v=v.replace(/^\*\./,'').replace(/\.$/,'');return /^[a-z\d.-]+\.[a-z]{2,}$/i.test(v)?v.toLowerCase():null}
+function makeUrl(q,d){return 'https://www.google.com/search?q='+encodeURIComponent((d?'site:'+d+' ':'')+q)}
+function stopQueue(report){runId++;if(timer!==null)clearTimeout(timer);timer=null;var was=active;active=false;$('stop').disabled=true;$('run').disabled=false;if(report&&was)status('Queue stopped; no further tabs will be opened.')}
+function renderUrls(){if(!prepared.length){list.innerHTML='<div class="empty">No URLs prepared yet.</div>';return}list.innerHTML=prepared.map(function(x,i){return '<div class="item"><span class="muted">'+(i+1)+'</span><span class="url">'+esc(x.url)+'</span><div class="actions"><button class="btn" data-act="copy" data-i="'+i+'">Copy</button><button class="btn" data-act="open" data-i="'+i+'">Open</button></div></div>'}).join('')}
+function prepare(){stopQueue(false);var q=parse(),lim=Number($('limit').value),d=targetDomain();if(!Number.isInteger(lim)||lim<0){status('Limit must be a whole number ≥ 0.','error');return false}if(d===null){status('Enter a valid target domain or leave it blank.','error');return false}if(lim)q=q.slice(0,lim);prepared=q.map(function(x){return {query:x,url:makeUrl(x,d)}});renderUrls();$('queryCount').textContent=parse().length;$('urlCount').textContent=prepared.length;$('progress').style.width='0%';status('Prepared '+prepared.length+' search URL(s).');return true}
+function openUrl(url){var w=window.open(url,'_blank');if(w)w.opener=null;return !!w}
+function runQueue(){if(!prepared.length&&!prepare())return;if(!prepared.length){status('No queries to launch.','error');return}var delay=Number($('delay').value);if(!Number.isFinite(delay)||delay<0||delay>60){status('Delay must be 0–60 seconds.','error');return}if($('dry').checked||!$('allowOpen').checked){status($('dry').checked?'Dry run: no tabs opened.':'Browser launches disabled; URLs are ready.');return}if(!$('newTabs').checked&&prepared.length>1){status('Enable new tabs to launch multiple queries.','error');return}if(!confirm('Only continue for authorized targets. Launch '+prepared.length+' search URL(s)?'))return;stopQueue(false);active=true;var token=runId,i=0;$('stop').disabled=false;$('run').disabled=true;function step(){if(!active||token!==runId)return;if(i>=prepared.length){active=false;timer=null;$('stop').disabled=true;$('run').disabled=false;status('Queue completed. Some popups may have been blocked.');return}var ok=openUrl(prepared[i].url);attempts++;$('launchCount').textContent=attempts;i++;$('progress').style.width=Math.round(i/prepared.length*100)+'%';status('Launch attempt '+i+' of '+prepared.length+(ok?' submitted.':' may have been blocked.'),ok?'':'busy');if(active&&token===runId)timer=setTimeout(step,Math.max(250,delay*1000))}step()}
+function renderPacks(){var g=$('templateGrid');g.innerHTML=Object.keys(packs).map(function(k){return '<button class="btn template" type="button" data-pack="'+esc(k)+'">'+esc(k)+'</button>'}).join('');g.addEventListener('click',function(e){var b=e.target.closest('[data-pack]');if(!b)return;if(area.value.trim()&&!confirm('Replace current queries with '+b.dataset.pack+'?'))return;area.value='# '+b.dataset.pack+'\n'+packs[b.dataset.pack];g.querySelectorAll('[data-pack]').forEach(function(x){x.classList.toggle('active',x===b)});$('queryCount').textContent=parse().length;status('Loaded '+b.dataset.pack+'. Prepare URLs to refresh results.')})}
+$('prepare').addEventListener('click',prepare);$('run').addEventListener('click',runQueue);$('stop').addEventListener('click',function(){stopQueue(true)});$('copyQueries').addEventListener('click',function(){copy(parse().join('\n'))});$('exportQueries').addEventListener('click',function(){download(area.value,'api-dorks.txt')});$('copyUrls').addEventListener('click',function(){copy(prepared.map(function(x){return x.url}).join('\n'))});$('exportUrls').addEventListener('click',function(){download(prepared.map(function(x){return x.url}).join('\n'),'api-dork-urls.txt')});
+list.addEventListener('click',function(e){var b=e.target.closest('[data-act]');if(!b)return;var x=prepared[Number(b.dataset.i)];if(!x)return;if(b.dataset.act==='copy')copy(x.url);else if(!openUrl(x.url))status('Popup blocked; copy the URL or allow popups.','error')});
+$('openAll').addEventListener('click',function(){if(!prepared.length&&!prepare())return;if(!prepared.length)return;if(!confirm('Open '+prepared.length+' tabs? Your browser may block popups.'))return;var n=0;prepared.forEach(function(x){if(openUrl(x.url))n++});status('Requested '+prepared.length+' tabs; browser accepted '+n+'.',n===prepared.length?'':'busy')});$('clearUrls').addEventListener('click',function(){prepared=[];renderUrls();$('urlCount').textContent='0';$('progress').style.width='0%';status('Prepared results cleared.')});
+$('queryFile').addEventListener('change',async function(e){var f=e.target.files&&e.target.files[0];if(!f)return;if(f.size>2*1024*1024){status('Query files must be ≤ 2 MB.','error');return}try{area.value=await f.text();$('queryCount').textContent=parse().length;status('Imported '+f.name+'. Prepare URLs to continue.')}catch(err){status('Could not read the file.','error')}});
+$('appendPack').addEventListener('click',function(){area.value+=(area.value.trim()?'\n\n':'')+defaultPack;$('queryCount').textContent=parse().length;status('Appended all template packs.')});$('restorePack').addEventListener('click',function(){if(area.value.trim()&&!confirm('Replace all queries with defaults?'))return;area.value=defaultPack;$('queryCount').textContent=parse().length;status('Default templates restored.')});
+$('reset').addEventListener('click',function(){if(!confirm('Reset the query workspace and prepared URLs?'))return;stopQueue(false);area.value=defaultPack;$('target').value='';$('delay').value='1';$('limit').value='0';$('allowOpen').checked=true;$('newTabs').checked=true;$('dry').checked=true;prepared=[];attempts=0;$('launchCount').textContent='0';$('queryCount').textContent=parse().length;$('urlCount').textContent='0';$('progress').style.width='0%';renderUrls();status('Workspace reset.')});
+$('copyBookmarklet').addEventListener('click',function(){copy($('bookmarklet').textContent)});
+function validUrl(s){try{var u=new URL(s);return ['http:','https:'].includes(u.protocol)&&!u.username&&!u.password?u:null}catch(e){return null}}function bytes(n){return n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(2)+' MB'}
+function clearResponse(){$('httpStatus').textContent='—';$('duration').textContent='—';$('size').textContent='0 B';$('responseHeaders').value='';$('responseBody').value='';apiStatus('Response cleared.')}
+$('clearResponse').addEventListener('click',clearResponse);
+function loadSpec(doc){if(!doc||!doc.paths||typeof doc.paths!=='object')throw Error('Missing OpenAPI paths object.');var ver=String(doc.openapi||doc.swagger||'');if(!ver.startsWith('3.')&&!ver.startsWith('2.'))throw Error('Only OpenAPI 3.x and Swagger 2.0 JSON are supported.');var base='';if(doc.servers&&doc.servers[0]&&doc.servers[0].url){try{base=new URL(doc.servers[0].url,location.href).href.replace(/\/$/,'')}catch(e){base=''}}else if(doc.swagger==='2.0'&&doc.host){var scheme=doc.schemes&&doc.schemes.includes('http')&&!doc.schemes.includes('https')?'http':'https';base=scheme+'://'+doc.host+(doc.basePath||'')}operations=[];var allowed=['get','post','put','patch','delete','head','options'];Object.keys(doc.paths).forEach(function(path){var item=doc.paths[path]||{};Object.keys(item).forEach(function(m){var d=item[m];if(allowed.includes(m.toLowerCase())&&d&&typeof d==='object')operations.push({method:m.toUpperCase(),path:path,base:base,summary:d.summary||d.operationId||'',body:d.requestBody&&d.requestBody.content&&d.requestBody.content['application/json']?d.requestBody.content['application/json'].example:null})})});if(!operations.length)throw Error('No supported HTTP operations found.');$('endpointSelect').innerHTML='<option value="">Manual endpoint</option>'+operations.map(function(o,i){return '<option value="'+i+'">'+esc(o.method+' '+o.path+(o.summary?' — '+o.summary:''))+'</option>'}).join('');apiStatus('Imported '+operations.length+' operation(s). Select one and review the URL.')}
+$('specFile').addEventListener('change',async function(e){var f=e.target.files&&e.target.files[0];if(!f)return;if(f.size>2*1024*1024){apiStatus('Spec file must be ≤ 2 MB.','error');return}try{loadSpec(JSON.parse(await f.text()))}catch(err){operations=[];$('endpointSelect').innerHTML='<option value="">Manual endpoint</option>';apiStatus('Import failed: '+err.message,'error')}});
+$('endpointSelect').addEventListener('change',function(e){if(e.target.value==='')return;var o=operations[Number(e.target.value)];if(!o)return;$('method').value=o.method;$('apiUrl').value=o.base+o.path.replace(/\{([^}]+)\}/g,':$1');$('body').value=o.body?JSON.stringify(o.body,null,2):'';apiStatus('Selected '+o.method+' '+o.path+'. Replace :path placeholders and review the target before sending.')});
+$('sendRequest').addEventListener('click',async function(){var u=validUrl($('apiUrl').value.trim());if(!u){apiStatus('Enter a valid http(s) URL without embedded credentials.','error');return}var method=$('method').value,headers;try{headers=JSON.parse($('headers').value||'{}')}catch(e){apiStatus('Headers must be valid JSON.','error');return}if(!headers||Array.isArray(headers)||typeof headers!=='object'||Object.values(headers).some(function(v){return typeof v!=='string'&&typeof v!=='number'})){apiStatus('Headers must be a JSON object with string or numeric values.','error');return}if(!confirm('Send one '+method+' request to:\n'+u.href+'\n\nConfirm that you own or are authorized to test this API.'))return;var btn=$('sendRequest');btn.disabled=true;$('httpStatus').textContent='…';$('duration').textContent='…';$('size').textContent='…';$('responseHeaders').value='';$('responseBody').value='';apiStatus('Request in progress. CORS may block the response.','busy');var start=performance.now(),ctl=new AbortController(),to=setTimeout(function(){ctl.abort()},15000);try{var opts={method:method,headers:headers,signal:ctl.signal,mode:'cors',credentials:'omit',cache:'no-store',redirect:'follow'};if(!['GET','HEAD'].includes(method)&&$('body').value.trim()){opts.body=$('body').value;if(!Object.keys(headers).some(function(k){return k.toLowerCase()==='content-type'})&&/^[\s]*[\[{]/.test(opts.body))opts.headers=Object.assign({},headers,{'Content-Type':'application/json'})}var res=await fetch(u.href,opts),text=await res.text(),dur=Math.round(performance.now()-start);$('httpStatus').textContent=String(res.status);$('duration').textContent=dur+' ms';$('size').textContent=bytes(new Blob([text]).size);$('responseHeaders').value=Array.from(res.headers.entries()).map(function(x){return x[0]+': '+x[1]}).join('\n')||'(No readable headers)';$('responseBody').value=text.length>1048576?text.slice(0,1048576)+'\n\n[Display truncated at 1 MB]':text;apiStatus('Request completed: HTTP '+res.status+' '+res.statusText+'. Only browser-readable headers are shown.',res.ok?'':'error')}catch(err){$('httpStatus').textContent='ERR';$('duration').textContent=Math.round(performance.now()-start)+' ms';$('size').textContent='0 B';apiStatus((err.name==='AbortError'?'Request timed out after 15 seconds.':'Request failed or was blocked by CORS, DNS, TLS, network policy, or server.')+' ('+err.name+')','error')}finally{clearTimeout(to);btn.disabled=false}});
+area.value=defaultPack;renderPacks();$('queryCount').textContent=parse().length;renderUrls();window.addEventListener('pagehide',function(){stopQueue(false)});
 })();
-</script>
-</body>
-</html>
+</script></body></html>
